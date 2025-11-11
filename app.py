@@ -1,4 +1,7 @@
+import re
 import time
+from urllib.parse import urlparse, unquote
+
 import pandas as pd
 
 from selenium import webdriver
@@ -7,7 +10,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
-from env import URL, DriverLocation  # Asegúrate de que tu env.py define estas variables
+import env  # noqa: F401
+from env import DriverLocation  # Asegúrate de que tu env.py define estas variables
 
 def ifGDRPNotice(driver):
     """Acepta el aviso de cookies si aparece."""
@@ -47,7 +51,7 @@ def get_reviews_scroll_wrapper(driver, timeout=15):
     return wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.XltNde.tTVLSc")))
 
 
-def scroll_until_end(driver, pause=1.0, stable_rounds=10, max_scrolls=400):
+def scroll_until_end(driver, pause=2.0, stable_rounds=10, max_scrolls=800):
     """
     Scrollea haciendo scrollIntoView del último elemento de la lista repetidamente.
     """
@@ -119,39 +123,94 @@ def get_data(driver, container=None):
         except:
             text = ""
 
+        try:
+            raw_date = r.find_element(By.CSS_SELECTOR, "span.rsqaWe").text
+        except:
+            raw_date = ""
+
         snippet = text[:60].replace("\n", " ")
         print(f" → Review #{idx} | {name} | {rating}⭐ | {snippet}...")
 
-        data.append([name, text, rating])
+        data.append([name, text, rating, raw_date])
 
     return data
 
-def write_to_csv(data):
-    print("Saving to CSV...")
-    df = pd.DataFrame(data, columns=["name", "comment", "rating"])
+def write_to_csv(data, filename="out.csv"):
+    print(f"Saving to {filename}...")
+    df = pd.DataFrame(data, columns=["name", "comment", "rating", "review_date"])
     df.insert(0, "id", range(1, len(df) + 1))  # autonumérico
-    df.to_csv('out.csv', index=False, encoding='utf-8')
-    print("✅ File saved as out.csv")
+    df.to_csv(filename, index=False, encoding='utf-8')
+    print(f"✅ File saved as {filename}")
 
-if __name__ == "__main__":
-    print("Starting scraper...")
+
+def get_target_urls():
+    urls = getattr(env, "URLS", None)
+    if urls is None:
+        urls = getattr(env, "URL", None)
+
+    if urls is None:
+        raise ValueError("Agrega una variable URL o URLS en env.py")
+
+    if isinstance(urls, str):
+        cleaned = [urls.strip()]
+    else:
+        try:
+            cleaned = [u.strip() for u in urls if isinstance(u, str)]
+        except TypeError:
+            raise TypeError("URLS debe ser un iterable de strings.")
+
+    cleaned = [u for u in cleaned if u]
+    if not cleaned:
+        raise ValueError("No se encontraron URLs válidas en env.py")
+    return cleaned
+
+
+def scrape_url(url):
+    print(f"\n============================")
+    print(f"Scraping: {url}")
 
     options = webdriver.ChromeOptions()
     options.add_argument("--lang=es-ES")
     options.add_experimental_option('prefs', {'intl.accept_languages': 'es-ES'})
 
     driver = webdriver.Chrome(executable_path=DriverLocation, options=options)
-    driver.get(URL)
+    try:
+        driver.get(url)
 
-    wait_until_loaded(driver)
-    ifGDRPNotice(driver)
-    wait_until_loaded(driver)
+        wait_until_loaded(driver)
+        ifGDRPNotice(driver)
+        wait_until_loaded(driver)
 
-    container = scroll_until_end(driver)
-    expand_long_reviews(driver, container=container)
-    data = get_data(driver, container=container)
+        container = scroll_until_end(driver)
+        expand_long_reviews(driver, container=container)
+        return get_data(driver, container=container)
+    finally:
+        driver.quit()
 
-    driver.quit()
-    write_to_csv(data)
 
-    print("✅ Done!")
+def business_slug_from_url(url):
+    parsed = urlparse(url)
+    path = parsed.path or ""
+    marker = "/place/"
+    start = path.find(marker)
+    if start == -1:
+        return "reviews"
+    segment = path[start + len(marker):]
+    segment = segment.split("/@", 1)[0]
+    segment = segment.strip("/")
+    if not segment:
+        return "reviews"
+    decoded = unquote(segment)
+    decoded = decoded.replace("+", "_").replace(" ", "_")
+    decoded = re.sub(r"[^\w_]", "_", decoded)
+    decoded = re.sub(r"_+", "_", decoded).strip("_")
+    return decoded or "reviews"
+
+if __name__ == "__main__":
+    for target_url in get_target_urls():
+        dataset = scrape_url(target_url)
+        if dataset:
+            filename = f"{business_slug_from_url(target_url)}.csv"
+            write_to_csv(dataset, filename=filename)
+        else:
+            print(f"⚠️ No data written for {target_url}.")

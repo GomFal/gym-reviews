@@ -1,2 +1,3 @@
-URL = "https://www.google.com/maps/place/Gimnasio+VivaGym+Las+Tablas+Sur/@40.4940326,-3.6762547,16z/data=!3m1!4b1!4m18!1m9!3m8!1s0xd4229579ec5a45f:0xdced0d5c4f296a97!2sGimnasio+VivaGym+Las+Tablas+Sur!8m2!3d40.4940285!4d-3.6736798!9m1!1b1!16s%2Fg%2F11c46hdq80!3m7!1s0xd4229579ec5a45f:0xdced0d5c4f296a97!8m2!3d40.4940285!4d-3.6736798!9m1!1b1!16s%2Fg%2F11c46hdq80?entry=ttu&g_ep=EgoyMDI1MTEwNC4xIKXMDSoASAFQAw%3D%3D"
+URLS = ["https://www.google.com/maps/place/Gimnasio+VivaGym+Embajadores/@40.4056701,-3.702056,16z/data=!3m1!5s0xd42262c4ebadf71:0xfabf97f4cfb3dd51!4m8!3m7!1s0xd42262c4eba57dd:0xf0f72d8f56eb57bf!8m2!3d40.405666!4d-3.6994811!9m1!1b1!16s%2Fg%2F11c3pwh06r?hl=es-ES&entry=ttu&g_ep=EgoyMDI1MTEwNS4wIKXMDSoASAFQAw%3D%3D"]
+
 DriverLocation = "C:Users/jgf20/chromedriver/chromedriver.exe"
