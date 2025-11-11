@@ -1,3 +1,5 @@
 Driver/chromedriver*
 __pycache__/
 Driver/geckodriver*
+.vscode/
+.env
