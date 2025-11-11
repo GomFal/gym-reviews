@@ -1,126 +1,157 @@
 import time
-
-from selenium import webdriver
-from selenium.webdriver.chrome.webdriver import WebDriver
-
-from openpyxl import Workbook
 import pandas as pd
 
-from env import URL, DriverLocation
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 
-def get_data(driver, dataStructreType):
-    """
-    this function get main text, score, name
-    """
-    print('get data...')
-    more_elemets = driver.find_elements_by_class_name('w8nwRe kyuRq')
-    for list_more_element in more_elemets:
-        list_more_element.click()
-    if dataStructreType == 1:
-        elements = driver.find_element_by_xpath('//body/div[2]/div[3]/div[8]/div[9]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[1]/div[2]/div[9]')
-    else:
-        elements = driver.find_element_by_xpath('//body/div[2]/div[3]/div[8]/div[9]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[1]/div[2]/div[8]')
-    childElement = elements.find_element_by_xpath('.//div[1]')
-    childElementClassName = childElement.get_attribute('class')
-    elements = elements.find_elements_by_xpath(f'//*[@class="{childElementClassName}"]')
-    
-    childElementNameClass = childElement.find_element_by_xpath('.//div[1]/div[1]/div[2]/div[2]/div[1]/button[1]/div[1]').get_attribute('class')
-    childElementTextClass = childElement.find_element_by_xpath('.//div[1]/div[4]/div[2]/div[1]/span[1]').get_attribute('class')
-    childElementScoreClass = childElement.find_element_by_xpath('.//div[1]/div[1]/div[4]/div[1]/span[1]').get_attribute('class')
-    lst_data = []
-    for data in elements:
-        name = 'No name'
-        text = 'No text'
-        score = '-'
-        try:
-            name = data.find_element_by_xpath(
-                f'.//*[@class="{childElementNameClass}"]').text
-            score = data.find_element_by_xpath(
-                f'.//*[@class="{childElementScoreClass}"]').get_attribute("aria-label")
-            text = data.find_element_by_xpath(
-                f'.//*[@class="{childElementTextClass}"]').text
-
-        except:
-            pass
-        
-        lst_data.append([name + " from GoogleMaps", text, score[0]])
-
-    return lst_data
+from env import URL, DriverLocation  # Asegúrate de que tu env.py define estas variables
 
 def ifGDRPNotice(driver):
-    # check if the domain of the url is consent.google.com
+    """Acepta el aviso de cookies si aparece."""
     if 'consent.google.com' in driver.current_url:
-        # click on the "I agree" button
-        driver.execute_script('document.getElementsByTagName("form")[0].submit()');
-    return
+        try:
+            driver.execute_script('document.getElementsByTagName("form")[0].submit();')
+            time.sleep(2)
+        except:
+            pass
 
-def ifPageIsFullyLoaded(driver):
-    # check if the page fully loaded including js
-    return driver.execute_script('return document.readyState') != 'complete'
+def wait_until_loaded(driver):
+    """Espera a que la página termine de cargar."""
+    while driver.execute_script('return document.readyState;') != 'complete':
+        time.sleep(1)
 
-def counter():
-    dataStructreType = 1
-    try:
-        result = driver.find_element_by_xpath('//body/div[2]/div[3]/div[8]/div[9]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[2]').find_element_by_class_name('fontBodySmall').text
-    except:
-        dataStructreType = 2
-        result = driver.find_element_by_xpath('//body/div[2]/div[3]/div[8]/div[9]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[1]/div[2]/div[2]/div[1]/div[2]').find_element_by_class_name('fontBodySmall').text
-    result = result.replace(',', '')
-    result = result.replace('.', '')
-    result = result.split(' ')
-    result = result[0].split('\n')
-    return int(int(result[0])/10)+1, dataStructreType
+def get_reviews_container(driver, timeout=15):
+    """
+    Devuelve el contenedor scrollable que realmente contiene las reseñas.
+    Google anida varias capas con clases m6QErb; solo la que también contiene
+    DxyBCb/dS8AEf responde a scrollTop, por eso filtramos específicamente.
+    """
+    wait = WebDriverWait(driver, timeout)
 
+    def _locate(_):
+        candidates = driver.find_elements(By.CSS_SELECTOR, "div.m6QErb.DxyBCb")
+        for c in candidates:
+            if c.get_attribute("tabindex") == "-1" and c.find_elements(By.CSS_SELECTOR, "div.jftiEf"):
+                return c
+        return False
 
-def scrolling(counter):
-    print('scrolling...')
-    scrollable_div = driver.find_element_by_xpath(
-        '//body/div[2]/div[3]/div[8]/div[9]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[1]/div[2]/div[last()]')
-    for _i in range(counter):
-        
-        scrolling = driver.execute_script(
-            """
-            var xpathResult = document.evaluate('//body/div[2]/div[3]/div[8]/div[9]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[1]/div[2]', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-            var element = xpathResult.singleNodeValue;
-            element.scrollTop = element.scrollHeight;
-            """,
-            scrollable_div
-        )
-        time.sleep(3)
+    return wait.until(_locate)
 
 
-def write_to_xlsx(data):
-    print('write to excel...')
-    cols = ["name", "comment", 'rating']
-    df = pd.DataFrame(data, columns=cols)
-    df.to_excel('out.xlsx')
+def get_reviews_scroll_wrapper(driver, timeout=15):
+    """Devuelve el contenedor externo que gestiona el scroll (clase XltNde tTVLSc)."""
+    wait = WebDriverWait(driver, timeout)
+    return wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.XltNde.tTVLSc")))
 
+
+def scroll_until_end(driver, pause=1.0, stable_rounds=10, max_scrolls=400):
+    """
+    Scrollea haciendo scrollIntoView del último elemento de la lista repetidamente.
+    """
+    print("Scrolling reviews container until all reviews are loaded...")
+    target = get_reviews_container(driver)
+    driver.execute_script("arguments[0].focus();", target)
+
+    prev_count = 0
+    stagnant_rounds = 0
+
+    for idx in range(1, max_scrolls + 1):
+        cards = target.find_elements(By.CSS_SELECTOR, "div.jftiEf.fontBodyMedium")
+        if not cards:
+            break
+
+        driver.execute_script("arguments[0].scrollTop = arguments[0].scrollHeight;", target)
+        print(f"   · Scroll pass {idx} (scrolled to card #{len(cards)})")
+        time.sleep(pause)
+
+        new_count = len(target.find_elements(By.CSS_SELECTOR, "div.jftiEf.fontBodyMedium"))
+        print(f"     Reviews loaded: {new_count} (prev {prev_count})")
+
+        if new_count == prev_count:
+            stagnant_rounds += 1
+            if stagnant_rounds >= stable_rounds:
+                print("   · No further growth detected, stopping scroll.")
+                break
+        else:
+            stagnant_rounds = 0
+            prev_count = new_count
+
+    total_reviews = len(target.find_elements(By.CSS_SELECTOR, "div.jftiEf.fontBodyMedium"))
+    print(f"✅ Scroll completed. Reviews detected: {total_reviews}")
+    return target
+
+def expand_long_reviews(driver, container=None):
+    """Hace click en los botones 'Más' para expandir textos completos."""
+    print("Expanding long reviews...")
+    target = container or get_reviews_container(driver)
+    buttons = target.find_elements(By.CSS_SELECTOR, "button.w8nwRe")
+    for btn in buttons:
+        try:
+            driver.execute_script("arguments[0].click();", btn)
+            time.sleep(0.1)
+        except:
+            pass
+
+def get_data(driver, container=None):
+    """Extrae nombre, rating, texto completo."""
+    print("Extracting reviews...")
+
+    target = container or get_reviews_container(driver)
+    reviews = target.find_elements(By.CSS_SELECTOR, "div.jftiEf.fontBodyMedium")
+    data = []
+
+    for idx, r in enumerate(reviews, start=1):
+        try:
+            name = r.find_element(By.CSS_SELECTOR, "div.d4r55").text
+        except:
+            name = "Unknown"
+
+        try:
+            rating = r.find_element(By.CSS_SELECTOR, "span.kvMYJc").get_attribute("aria-label")[0]
+        except:
+            rating = "-"
+
+        try:
+            text = r.find_element(By.CSS_SELECTOR, "span.wiI7pd").text
+        except:
+            text = ""
+
+        snippet = text[:60].replace("\n", " ")
+        print(f" → Review #{idx} | {name} | {rating}⭐ | {snippet}...")
+
+        data.append([name, text, rating])
+
+    return data
+
+def write_to_csv(data):
+    print("Saving to CSV...")
+    df = pd.DataFrame(data, columns=["name", "comment", "rating"])
+    df.insert(0, "id", range(1, len(df) + 1))  # autonumérico
+    df.to_csv('out.csv', index=False, encoding='utf-8')
+    print("✅ File saved as out.csv")
 
 if __name__ == "__main__":
+    print("Starting scraper...")
 
-    print('starting...')
     options = webdriver.ChromeOptions()
-    options.add_argument("--headless")  # show browser or not
-    options.add_argument("--lang=en-US")
-    options.add_experimental_option('prefs', {'intl.accept_languages': 'en,en_US'})
-    DriverPath = DriverLocation
-    driver = webdriver.Chrome(DriverPath, options=options)
+    options.add_argument("--lang=es-ES")
+    options.add_experimental_option('prefs', {'intl.accept_languages': 'es-ES'})
 
+    driver = webdriver.Chrome(executable_path=DriverLocation, options=options)
     driver.get(URL)
-    
-    while ifPageIsFullyLoaded(driver):
-        time.sleep(1)
-        
+
+    wait_until_loaded(driver)
     ifGDRPNotice(driver)
-    
-    while ifPageIsFullyLoaded(driver):
-        time.sleep(1)
+    wait_until_loaded(driver)
 
-    counter = counter()
-    scrolling(counter[0])
+    container = scroll_until_end(driver)
+    expand_long_reviews(driver, container=container)
+    data = get_data(driver, container=container)
 
-    data = get_data(driver, counter[1])
-    driver.close()
+    driver.quit()
+    write_to_csv(data)
 
-    write_to_xlsx(data)
-    print('Done!')
+    print("✅ Done!")

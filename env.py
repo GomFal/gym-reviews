@@ -1,2 +1,2 @@
-URL = "https://www.google.com/maps/place/Google+UK/@51.5332608,-0.1304879,17z/data=!4m7!3m6!1s0x48761b3c54efa6e1:0xc7053ab04745950d!8m2!3d51.5332609!4d-0.1260032!9m1!1b1"
-DriverLocation = "./Driver/chromedriver.exe"
+URL = "https://www.google.com/maps/place/Gimnasio+VivaGym+Las+Tablas+Sur/@40.4940326,-3.6762547,16z/data=!3m1!4b1!4m18!1m9!3m8!1s0xd4229579ec5a45f:0xdced0d5c4f296a97!2sGimnasio+VivaGym+Las+Tablas+Sur!8m2!3d40.4940285!4d-3.6736798!9m1!1b1!16s%2Fg%2F11c46hdq80!3m7!1s0xd4229579ec5a45f:0xdced0d5c4f296a97!8m2!3d40.4940285!4d-3.6736798!9m1!1b1!16s%2Fg%2F11c46hdq80?entry=ttu&g_ep=EgoyMDI1MTEwNC4xIKXMDSoASAFQAw%3D%3D"
+DriverLocation = "C:Users/jgf20/chromedriver/chromedriver.exe"
