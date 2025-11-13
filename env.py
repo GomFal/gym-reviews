@@ -1,3 +1,3 @@
-URLS = ["https://www.google.com/maps/place/Gimnasio+VivaGym+Embajadores/@40.4056701,-3.702056,16z/data=!3m1!5s0xd42262c4ebadf71:0xfabf97f4cfb3dd51!4m8!3m7!1s0xd42262c4eba57dd:0xf0f72d8f56eb57bf!8m2!3d40.405666!4d-3.6994811!9m1!1b1!16s%2Fg%2F11c3pwh06r?hl=es-ES&entry=ttu&g_ep=EgoyMDI1MTEwNS4wIKXMDSoASAFQAw%3D%3D"]
+URLS = ["https://www.google.com/maps/place/Fitness+Park+Madrid+-+Rio+2/@40.3904247,-3.7779129,13z/data=!3m1!5s0xd42264ae90c906d:0x3023bfdcea4d824d!4m12!1m2!2m1!1smadrid+gym!3m8!1s0xd422758a73f71e5:0x9386aca809af9a4c!8m2!3d40.3904247!4d-3.7016952!9m1!1b1!15sCgptYWRyaWQgZ3ltWgwiCm1hZHJpZCBneW2SAQ5maXRuZXNzX2NlbnRlcpoBJENoZERTVWhOTUc5blMwVkpRMEZuU1VSUU5YVlVVVjluUlJBQuABAPoBBAgAEEM!16s%2Fg%2F11tcx5rg0r?entry=ttu&g_ep=EgoyMDI1MTExMC4wIKXMDSoASAFQAw%3D%3D"]
 
 DriverLocation = "C:Users/jgf20/chromedriver/chromedriver.exe"
